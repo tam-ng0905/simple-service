@@ -1,32 +1,46 @@
 const main = async () => {
-    const [owner, randomPerson] = await hre.ethers.getSigners();
-    const contractFactory = await hre.ethers.getContractFactory("SimpleContract");
-    const simpleContract = await contractFactory.deploy();
-    await simpleContract.deployed();
+    const waveContractFactory = await hre.ethers.getContractFactory('WavePortal');
+    const waveContract = await waveContractFactory.deploy({
+        value: hre.ethers.utils.parseEther('0.1'),
+    });
+    await waveContract.deployed();
+    console.log('Contract addy:', waveContract.address);
 
-    console.log("Contract deployed to:", simpleContract.address);
-    console.log("Contract deployed by:", owner.address);
+    let contractBalance = await hre.ethers.provider.getBalance(
+        waveContract.address
+    );
+    console.log(
+        'Contract balance:',
+        hre.ethers.utils.formatEther(contractBalance)
+    );
 
-    let messageCount;
-    messageCount = await simpleContract.getTotalMessages();
+    /*
+     * Let's try two waves now
+     */
+    const waveTxn = await waveContract.wave('This is wave #1');
+    await waveTxn.wait();
 
-    let msgTxn = await simpleContract.message();
-    await msgTxn.wait();
+    const waveTxn2 = await waveContract.wave('This is wave #2');
+    await waveTxn2.wait();
 
-    msgTxn = await simpleContract.connect(randomPerson).message();
-    await msgTxn.wait();
+    contractBalance = await hre.ethers.provider.getBalance(waveContract.address);
+    console.log(
+        'Contract balance:',
+        hre.ethers.utils.formatEther(contractBalance)
+    );
 
-    messageCount = await simpleContract.getTotalMessages();
+    let allWaves = await waveContract.getAllWaves();
+    console.log(allWaves);
 };
 
 const runMain = async () => {
     try {
         await main();
         process.exit(0);
-    } catch (error){
+    } catch (error) {
+        console.log(error);
         process.exit(1);
     }
-}
-
+};
 
 runMain();
